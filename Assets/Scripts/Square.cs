@@ -5,6 +5,7 @@ public class Square : MonoBehaviour
 {
     public Board.Marks content;
     private Image image;
+    private Button button;
 
     [Tooltip("index[0] = x position, index[1] = y position")]
     [SerializeField] int[] index = new int[2];
@@ -15,15 +16,20 @@ public class Square : MonoBehaviour
     void Start()
     {
         image = GetComponent<Image>();
+        button = GetComponent<Button>();
     }
 
     /// <summary>
     /// Sets the content of the square
     /// </summary>
-    public void Set(Board.Marks mark, Sprite newImage)
+    /// <param name="mark">Mark that will be placed in the square</param>
+    public void Set(Board.Marks mark)
     {
-        content = mark;
-        image.sprite = newImage;
+        if (mark != content)
+        {
+            content = mark;
+            image.sprite = Board.instance.GetSprite(mark);
+        }
     }
 
     /// <summary>
