@@ -19,6 +19,7 @@ public class Arrow : MonoBehaviour
         
         button = GetComponent<Button>();
         Board.instance.UpdateArrowsState += UpdateState;
+        Board.instance.EnableArrows += Enable;
     }
 
     /// <summary>
@@ -46,5 +47,10 @@ public class Arrow : MonoBehaviour
     {
         if (this.row != row || this.index != index || this.bigArrow != bigArrow)
             button.interactable = false;
+    }
+
+    private void Enable()
+    {
+        button.interactable = true;
     }
 }

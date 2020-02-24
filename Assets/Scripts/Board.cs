@@ -18,9 +18,10 @@ public class Board : MonoBehaviour
         BrokenO
     };
 
-    // Board and reference to the squares
+    // Boards and reference to the squares
     private Marks[,] board = new Marks[4,4];
     private Marks[,] backupBoard = new Marks[4,4];
+    private Marks[,] lastTurnBoard = new Marks[4,4];
     private Square[,] squares = new Square[4,4];
 
     // Current turn variables
@@ -36,10 +37,13 @@ public class Board : MonoBehaviour
 
 
     [SerializeField] int emptySquares;
+    private bool hasShifted = false;
 
-
+    // Events
     public delegate void ArrowManager(bool row, int index, bool bigArrow);
     public event ArrowManager UpdateArrowsState; 
+    public delegate void ArrowEnabler();
+    public event ArrowEnabler EnableArrows;
 
     /// <summary>
     /// Prepares the game
@@ -96,6 +100,9 @@ public class Board : MonoBehaviour
                 squares[i,j].Set(board[i,j]);
     }
 
+    /// <summary>
+    /// Copies the current state of the board to the backup
+    /// </summary>
     private void UpdateBackup()
     {
         for (int i = 0; i < 4; i++)
@@ -139,6 +146,8 @@ public class Board : MonoBehaviour
             turnSprite = XSprite;
         }         
 
+        hasShifted = false;
+        EnableArrows?.Invoke();
         UpdateBackup();   
     }
 
@@ -160,7 +169,7 @@ public class Board : MonoBehaviour
             board[x, y] = turnMark;
             squares[x, y].Set(turnMark);
 
-            if (WonGame())
+            if (!hasShifted && WonGame())
             {
                 Debug.Log(turnMark + " won");
                 CleanBoard();   
@@ -199,7 +208,7 @@ public class Board : MonoBehaviour
             CleanBoard();   
         }
 
-        // UpdateArrowsState?.Invoke(true, index, false);
+        UpdateButtons(false, 0, true);
         UpdateSquares();
     }
 
@@ -214,7 +223,7 @@ public class Board : MonoBehaviour
             CleanBoard();   
         }
 
-        // UpdateArrowsState?.Invoke(true, index, false);
+        UpdateButtons(true, 0, true);
         UpdateSquares();
     }
 
@@ -243,7 +252,7 @@ public class Board : MonoBehaviour
                 CleanBoard();   
             }
 
-            // UpdateArrowsState?.Invoke(true, index, false);
+            UpdateButtons(false, index, bigArrow);
             UpdateSquares();
         }
     }
@@ -275,9 +284,40 @@ public class Board : MonoBehaviour
                 CleanBoard();   
             }
 
-            // UpdateArrowsState?.Invoke(true, index, false);
+            UpdateButtons(true, index, bigArrow);
             UpdateSquares();
         }
+    }
+
+    private void UpdateButtons(bool row, int index, bool bigArrow)
+    {
+        if (CompareWith(backupBoard))
+        {
+            hasShifted = false;
+            EnableArrows?.Invoke();
+        }
+        else
+        {
+            hasShifted = true;
+            // if (CompareWith(lastTurnBoard))
+                
+            // else
+                UpdateArrowsState?.Invoke(row, index, bigArrow);
+        }
+
+    }
+
+    /// <summary>
+    /// Compares the current state of the board with another version
+    /// </summary>
+    /// <returns>Returns true if they are equal</returns>
+    private bool CompareWith(Marks[,] otherBoard)
+    {
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                if (otherBoard[i,j] != board[i,j])
+                    return false;
+        return true;
     }
 
     /// <summary>
