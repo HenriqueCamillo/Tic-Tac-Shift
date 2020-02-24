@@ -2227,6 +2227,7 @@ MonoBehaviour:
   BrokenXSprite: {fileID: 21300000, guid: a05e5f11a3d54ef4683e517e7eb92f51, type: 3}
   BrokenOSprite: {fileID: 21300000, guid: bdd4e094e3743cb4780da68572afa9b1, type: 3}
   emptySprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  emptySquares: 0
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0

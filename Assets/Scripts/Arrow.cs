@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class Arrow : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class Arrow : MonoBehaviour
     [SerializeField] bool positiveMovement;
     [SerializeField] int index;
     [SerializeField] bool bigArrow;
+    private Button button;
 
     void Start()
     {
@@ -14,6 +16,9 @@ public class Arrow : MonoBehaviour
             Debug.LogWarning(name + "is column and row at the same time");
         else if (!row && !column)
             Debug.LogWarning(name + "is neither column nor row");
+        
+        button = GetComponent<Button>();
+        Board.instance.UpdateArrowsState += UpdateState;
     }
 
     /// <summary>
@@ -31,9 +36,15 @@ public class Arrow : MonoBehaviour
         else
         {
             if (row)
-                Board.instance.ShiftRow(index, positiveMovement);
+                Board.instance.ShiftRow(index, positiveMovement, bigArrow);
             else if (column)
-                Board.instance.ShiftColumn(index, positiveMovement);
+                Board.instance.ShiftColumn(index, positiveMovement,bigArrow);
         }
+    }
+
+    private void UpdateState(bool row, int index, bool bigArrow)
+    {
+        if (this.row != row || this.index != index || this.bigArrow != bigArrow)
+            button.interactable = false;
     }
 }

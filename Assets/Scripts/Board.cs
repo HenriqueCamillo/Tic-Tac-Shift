@@ -35,6 +35,11 @@ public class Board : MonoBehaviour
     [SerializeField] Sprite emptySprite;
 
 
+    [SerializeField] int emptySquares;
+
+
+    public delegate void ArrowManager(bool row, int index, bool bigArrow);
+    public event ArrowManager UpdateArrowsState; 
 
     /// <summary>
     /// Prepares the game
@@ -77,6 +82,8 @@ public class Board : MonoBehaviour
                 backupBoard[i,j] = Marks.Empty;
                 squares[i,j].Set(Marks.Empty);
             }
+
+        emptySquares = 16;
     }
 
     /// <summary>
@@ -93,7 +100,8 @@ public class Board : MonoBehaviour
     {
         for (int i = 0; i < 4; i++)
             for (int j = 0; j < 4; j++)
-                backupBoard[i,j] = board[i,j];
+                if (backupBoard[i,j] != board[i,j])
+                    backupBoard[i,j] = board[i,j];
     }
 
     /// <summary>
@@ -135,7 +143,7 @@ public class Board : MonoBehaviour
     }
 
     /// <summary>
-    /// Marks a square if possible, given its coordinates, and switches turns
+    /// Marks a square if possible, given its coordinates, and switches the turn
     /// </summary>
     /// <param name="x">X position</param>
     /// <param name="y">Y position</param>
@@ -146,14 +154,35 @@ public class Board : MonoBehaviour
             Mark an empty square
             Fix a broken mark
         */
-        if (
-            board[x,y] == Marks.Empty ||
-            (board[x,y] == Marks.BrokenX && turnMark == Marks.X) ||
-            (board[x,y] == Marks.BrokenO && turnMark == Marks.O)
-        )
+        // If marking a empty square
+        if (board[x,y] == Marks.Empty)
         {
             board[x, y] = turnMark;
             squares[x, y].Set(turnMark);
+
+            if (WonGame())
+            {
+                Debug.Log(turnMark + " won");
+                CleanBoard();   
+            }
+
+
+            if (--emptySquares == 0)
+                CleanBoard();
+            else
+                SwitchTurn();
+        }
+        // If restoring a broken mark
+        else if ((board[x,y] == Marks.BrokenX && turnMark == Marks.X) || (board[x,y] == Marks.BrokenO && turnMark == Marks.O))
+        {
+            board[x, y] = turnMark;
+            squares[x, y].Set(turnMark);
+
+            if (WonGame())
+            {
+                Debug.Log(turnMark + " won");
+                CleanBoard();   
+            }
 
             SwitchTurn();
         }
@@ -162,16 +191,34 @@ public class Board : MonoBehaviour
     public void ShiftAllColumns(bool positiveMovement)
     {
         for (int i = 0; i < 4; i++)
-            ShiftColumn(i, positiveMovement);
+            ShiftColumn(i, positiveMovement, true);
+
+        if (WonGame())
+        {
+            Debug.Log(turnMark + " won");
+            CleanBoard();   
+        }
+
+        // UpdateArrowsState?.Invoke(true, index, false);
+        UpdateSquares();
     }
 
     public void ShiftAllRows(bool positiveMovement)
     {
         for (int i = 0; i < 4; i++)
-            ShiftRow(i, positiveMovement);
+            ShiftRow(i, positiveMovement, true);
+
+        if (WonGame())
+        {
+            Debug.Log(turnMark + " won");
+            CleanBoard();   
+        }
+
+        // UpdateArrowsState?.Invoke(true, index, false);
+        UpdateSquares();
     }
 
-    public void ShiftColumn(int index, bool positiveMovement)
+    public void ShiftColumn(int index, bool positiveMovement, bool bigArrow)
     {
         if (positiveMovement)
         {
@@ -188,10 +235,20 @@ public class Board : MonoBehaviour
             board[index, 3] = temp;
         }
 
-        UpdateSquares();
+        if (!bigArrow)
+        {
+            if (WonGame())
+            {
+                Debug.Log(turnMark + " won");
+                CleanBoard();   
+            }
+
+            // UpdateArrowsState?.Invoke(true, index, false);
+            UpdateSquares();
+        }
     }
 
-    public void ShiftRow(int index, bool positiveMovement)
+    public void ShiftRow(int index, bool positiveMovement, bool bigArrow)
     {
         if (positiveMovement)
         {
@@ -208,7 +265,102 @@ public class Board : MonoBehaviour
             board[3, index] = temp;
         }
 
-        UpdateSquares();
+        // Checks for win condition and updates squares only if it is not a big arrow.
+        // If it is, checks outside this method
+        if (!bigArrow)
+        {
+            if (WonGame())
+            {
+                Debug.Log(turnMark + " won");
+                CleanBoard();   
+            }
+
+            // UpdateArrowsState?.Invoke(true, index, false);
+            UpdateSquares();
+        }
     }
 
+    /// <summary>
+    /// Checks if the player whose turn is the current has won the game
+    /// </summary>
+    /// <returns>Returns ture if the game was won</returns>
+    private bool WonGame()
+    {
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                if (board[i,j] == turnMark)
+                    if (HasVictoryCondition(i, j))
+                        return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Verifies if a index is valid or not
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns>Returns true if the index is invalid</returns>
+    private bool OutOfBounds(int x, int y)
+    {
+        if (x < 0 || x > 3 || y < 0 || y > 3)
+            return true;
+        else 
+            return false;
+    }
+
+    /// <summary>
+    /// Verifies if a square with coordinates [x,y] is part of a connection of 3 marks (victory condition)
+    /// </summary>
+    /// <param name="x">X position of the square</param>
+    /// <param name="y">Y position of the square</param>
+    /// <returns>Returns true if the victory condition is found</returns>
+    private bool HasVictoryCondition(int x, int y)
+    {
+        // Possible connections
+        Vector2[] connections = { Vector2.up, Vector2.down, Vector2.right, Vector2.left,
+               new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, 1),new Vector2(-1, -1)};
+
+
+        int newX, newY;
+        // For each one of the possible connections
+        foreach (var connection in connections)
+        {
+            // Verifies if there is connection using the array of possible connections
+            newX = x + (int)connection.x;
+            newY = y + (int)connection.y;
+
+            // Go to next possible connection if it's out of bounds
+            if (OutOfBounds(newX, newY))
+                continue;
+
+            // If there is a connection
+            if (board[newX, newY] == turnMark)
+            {
+                // Verifies if [x,y] is the center of the connection of 3   
+                newX = x - (int)connection.x;
+                newY = y - (int)connection.y;
+                
+                if (!OutOfBounds(newX, newY))
+                {
+                    if (board[newX, newY] == turnMark)
+                        return true;
+                }
+                // If it gets out of bounds, checks if it is the start
+                else 
+                {
+                    newX = x + 2 * (int)connection.x;
+                    newY = y + 2 * (int)connection.y;
+
+                    if (!OutOfBounds(newX, newY))
+                    {
+                        if (board[newX, newY] == turnMark)
+                            return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
 }
