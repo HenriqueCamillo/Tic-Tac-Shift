@@ -10,6 +10,9 @@ public class Arrow : MonoBehaviour
     [SerializeField] bool bigArrow;
     private Button button;
 
+    /// <summary>
+    /// Subscribe to the events of the board
+    /// </summary>
     void Start()
     {
         if (row && column)
@@ -18,8 +21,10 @@ public class Arrow : MonoBehaviour
             Debug.LogWarning(name + "is neither column nor row");
         
         button = GetComponent<Button>();
+
         Board.instance.UpdateArrowsState += UpdateState;
         Board.instance.EnableArrows += Enable;
+        Board.instance.OnTurnChange += Enable;
     }
 
     /// <summary>
@@ -43,12 +48,21 @@ public class Arrow : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Disables the arrow depending on the shifted row or column
+    /// </summary>
+    /// <param name="row">Indicates if the shifted arrow is a row. If false, it is a column.</param>
+    /// <param name="index">THe index of the row or column</param>
+    /// <param name="bigArrow">Indicates if the whole board was shifted using a big arrow</param>
     private void UpdateState(bool row, int index, bool bigArrow)
     {
         if (this.row != row || this.index != index || this.bigArrow != bigArrow)
             button.interactable = false;
     }
 
+    /// <summary>
+    /// Reenables the arrow
+    /// </summary>
     private void Enable()
     {
         button.interactable = true;

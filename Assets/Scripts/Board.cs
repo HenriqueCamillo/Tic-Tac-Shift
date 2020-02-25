@@ -26,11 +26,10 @@ public class Board : MonoBehaviour
 
     // Current turn variables
     private Marks turnMark;
-    private Sprite turnSprite;
-
+    
     // Sprites
-    [SerializeField] Sprite XSprite;
-    [SerializeField] Sprite OSprite;
+    public Sprite XSprite;
+    public Sprite OSprite;
     [SerializeField] Sprite BrokenXSprite;
     [SerializeField] Sprite BrokenOSprite;
     [SerializeField] Sprite emptySprite;
@@ -44,6 +43,11 @@ public class Board : MonoBehaviour
     public event ArrowManager UpdateArrowsState; 
     public delegate void ArrowEnabler();
     public event ArrowEnabler EnableArrows;
+    public delegate void OnTurnChangeHandler();
+    public event OnTurnChangeHandler OnTurnChange;
+
+
+    public Marks TurnMark => turnMark;
 
     /// <summary>
     /// Prepares the game
@@ -60,9 +64,18 @@ public class Board : MonoBehaviour
         InitializeSquares();
         CleanBoard();
 
-        // Initializes the variables for the first turn
-        turnMark = Marks.X;
-        turnSprite = XSprite;
+        SelectFirstPlayer();
+    }
+
+    /// <summary>
+    /// Randomly chooses the first player, and sets up the variables
+    /// </summary>
+    private void SelectFirstPlayer()
+    {
+        if (Random.Range(0f,1f) < 0.5f)
+            turnMark = Marks.X;
+        else
+            turnMark = Marks.O;
     }
 
     /// <summary>
@@ -131,24 +144,33 @@ public class Board : MonoBehaviour
     }
 
     /// <summary>
+    /// Returns the broken version of an mark
+    /// </summary>
+    /// <param name="mark"></param>
+    /// <returns></returns>
+    private Marks GetBrokenMark(Marks mark)
+    {
+        if (mark == Marks.X)
+            return Marks.BrokenX;
+        else if (mark == Marks.O)
+            return Marks.BrokenO;
+        else
+            return mark; 
+    }
+
+    /// <summary>
     /// Swithces the turn of the players and updates the backup board
     /// </summary>
-    private void SwitchTurn()
+    public void SwitchTurn()
     {
         if (turnMark == Marks.X)
-        {
             turnMark = Marks.O;
-            turnSprite = OSprite;
-        }
         else if (turnMark == Marks.O)
-        {
             turnMark = Marks.X;
-            turnSprite = XSprite;
-        }         
 
         hasShifted = false;
-        EnableArrows?.Invoke();
-        UpdateBackup();   
+        OnTurnChange?.Invoke();
+        UpdateBackup();
     }
 
     /// <summary>
@@ -169,10 +191,19 @@ public class Board : MonoBehaviour
             board[x, y] = turnMark;
             squares[x, y].Set(turnMark);
 
-            if (!hasShifted && WonGame())
+            if (WonGame())
             {
-                Debug.Log(turnMark + " won");
-                CleanBoard();   
+                if (!hasShifted)
+                {
+                    Debug.Log(turnMark + " won");
+                    CleanBoard();   
+                }
+                else
+                {
+                    Marks mark = GetBrokenMark(turnMark);
+                    board[x, y] = mark;
+                    squares[x, y].Set(mark);
+                }
             }
 
 
@@ -189,8 +220,17 @@ public class Board : MonoBehaviour
 
             if (WonGame())
             {
-                Debug.Log(turnMark + " won");
-                CleanBoard();   
+                if (!hasShifted)
+                {
+                    Debug.Log(turnMark + " won");
+                    CleanBoard();   
+                }
+                else
+                {
+                    Marks mark = GetBrokenMark(turnMark);
+                    board[x, y] = mark;
+                    squares[x, y].Set(mark);
+                }
             }
 
             SwitchTurn();
