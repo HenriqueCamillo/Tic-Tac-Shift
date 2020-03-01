@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class Board : MonoBehaviour
 {
@@ -37,6 +38,11 @@ public class Board : MonoBehaviour
 
     [SerializeField] int emptySquares;
     private bool hasShifted = false;
+
+    // Win game panel
+    [SerializeField] GameObject winGamePanel;
+    [SerializeField] TextMeshProUGUI winText;
+    private bool isInGame = false;
 
     // Events
     public delegate void ArrowManager(bool row, int index, bool bigArrow);
@@ -101,6 +107,8 @@ public class Board : MonoBehaviour
             }
 
         emptySquares = 16;
+        isInGame = true;
+        winGamePanel.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -143,6 +151,16 @@ public class Board : MonoBehaviour
             return emptySprite;
     }
 
+    private string GetMarkText(Marks mark)
+    {
+        if (mark == Marks.X)
+            return "X";
+        else if (mark == Marks.O)
+            return "O";
+        else
+            return "";
+    }
+
     /// <summary>
     /// Returns the broken version of an mark
     /// </summary>
@@ -180,6 +198,9 @@ public class Board : MonoBehaviour
     /// <param name="y">Y position</param>
     public void Mark(int x, int y)
     {
+        if (!isInGame)
+            return;
+
         // Possible moves:
         /*
             Mark an empty square
@@ -195,8 +216,9 @@ public class Board : MonoBehaviour
             {
                 if (!hasShifted)
                 {
+
                     Debug.Log(turnMark + " won");
-                    CleanBoard();   
+                    EndGame();
                 }
                 else
                 {
@@ -208,7 +230,7 @@ public class Board : MonoBehaviour
 
 
             if (--emptySquares == 0)
-                CleanBoard();
+                EndGame("Draw");
             else
                 SwitchTurn();
         }
@@ -223,7 +245,7 @@ public class Board : MonoBehaviour
                 if (!hasShifted)
                 {
                     Debug.Log(turnMark + " won");
-                    CleanBoard();   
+                    EndGame();
                 }
                 else
                 {
@@ -239,13 +261,16 @@ public class Board : MonoBehaviour
 
     public void ShiftAllColumns(bool positiveMovement)
     {
+        if (!isInGame)
+            return;
+
         for (int i = 0; i < 4; i++)
             ShiftColumn(i, positiveMovement, true);
 
         if (WonGame())
         {
             Debug.Log(turnMark + " won");
-            CleanBoard();   
+            EndGame();
         }
 
         UpdateButtons(false, 0, true);
@@ -254,13 +279,16 @@ public class Board : MonoBehaviour
 
     public void ShiftAllRows(bool positiveMovement)
     {
+        if (!isInGame)
+            return;
+
         for (int i = 0; i < 4; i++)
             ShiftRow(i, positiveMovement, true);
 
         if (WonGame())
         {
             Debug.Log(turnMark + " won");
-            CleanBoard();   
+            EndGame();
         }
 
         UpdateButtons(true, 0, true);
@@ -269,6 +297,9 @@ public class Board : MonoBehaviour
 
     public void ShiftColumn(int index, bool positiveMovement, bool bigArrow)
     {
+        if (!isInGame)
+            return;
+
         if (positiveMovement)
         {
             Marks temp = board[index, 3];
@@ -289,7 +320,7 @@ public class Board : MonoBehaviour
             if (WonGame())
             {
                 Debug.Log(turnMark + " won");
-                CleanBoard();   
+                EndGame();
             }
 
             UpdateButtons(false, index, bigArrow);
@@ -299,6 +330,7 @@ public class Board : MonoBehaviour
 
     public void ShiftRow(int index, bool positiveMovement, bool bigArrow)
     {
+
         if (positiveMovement)
         {
             Marks temp = board[3, index];
@@ -321,7 +353,7 @@ public class Board : MonoBehaviour
             if (WonGame())
             {
                 Debug.Log(turnMark + " won");
-                CleanBoard();   
+                EndGame();
             }
 
             UpdateButtons(true, index, bigArrow);
@@ -339,10 +371,7 @@ public class Board : MonoBehaviour
         else
         {
             hasShifted = true;
-            // if (CompareWith(lastTurnBoard))
-                
-            // else
-                UpdateArrowsState?.Invoke(row, index, bigArrow);
+            UpdateArrowsState?.Invoke(row, index, bigArrow);
         }
 
     }
@@ -373,6 +402,20 @@ public class Board : MonoBehaviour
                         return true;
 
         return false;
+    }
+
+    private void EndGame()
+    {
+        winText.text = GetMarkText(turnMark) + " won!";
+        winGamePanel.gameObject.SetActive(true);
+        isInGame = false;
+    }
+
+    private void EndGame(string result)
+    {
+        winText.text = result;
+        winGamePanel.gameObject.SetActive(true);
+        isInGame = false;
     }
 
     /// <summary>
