@@ -51,6 +51,8 @@ public class Board : MonoBehaviour
     public event ArrowEnabler EnableArrows;
     public delegate void OnTurnChangeHandler();
     public event OnTurnChangeHandler OnTurnChange;
+    public delegate void OnEndGameHandler();
+    public event OnEndGameHandler OnEndGame;
 
 
     public Marks TurnMark => turnMark;
@@ -69,8 +71,6 @@ public class Board : MonoBehaviour
         // Creates a brand new board
         InitializeSquares();
         CleanBoard();
-
-        SelectFirstPlayer();
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ public class Board : MonoBehaviour
     /// <summary>
     /// Sets the board and all the squares to empty
     /// </summary>
-    private void CleanBoard()
+    public void CleanBoard()
     {
         for (int i = 0; i < 4; i++)
             for (int j = 0; j < 4; j++)
@@ -107,6 +107,10 @@ public class Board : MonoBehaviour
             }
 
         emptySquares = 16;
+        SelectFirstPlayer();
+        EnableArrows?.Invoke();
+        OnEndGame?.Invoke();
+        hasShifted = false;
         isInGame = true;
         winGamePanel.gameObject.SetActive(false);
     }
@@ -186,6 +190,13 @@ public class Board : MonoBehaviour
         else if (turnMark == Marks.O)
             turnMark = Marks.X;
 
+        if (WonGame())
+        {
+            Debug.Log(turnMark + " won");
+            EndGame();
+        }
+
+
         hasShifted = false;
         OnTurnChange?.Invoke();
         UpdateBackup();
@@ -216,7 +227,6 @@ public class Board : MonoBehaviour
             {
                 if (!hasShifted)
                 {
-
                     Debug.Log(turnMark + " won");
                     EndGame();
                 }
@@ -330,6 +340,8 @@ public class Board : MonoBehaviour
 
     public void ShiftRow(int index, bool positiveMovement, bool bigArrow)
     {
+        if (!isInGame)
+            return;
 
         if (positiveMovement)
         {
@@ -406,9 +418,9 @@ public class Board : MonoBehaviour
 
     private void EndGame()
     {
+        isInGame = false;
         winText.text = GetMarkText(turnMark) + " won!";
         winGamePanel.gameObject.SetActive(true);
-        isInGame = false;
     }
 
     private void EndGame(string result)

@@ -11,7 +11,27 @@ public class TurnIndicator : MonoBehaviour
     /// </summary>
     private void Start()
     {
+        player1.sprite = Board.instance.XSprite;
+        player2.sprite = Board.instance.OSprite;
+
+        if (Board.instance.TurnMark == Board.Marks.X)
+        {
+            player1.color = Color.white;
+            player2.color = Color.grey;
+        }
+        else
+        {
+            player1.color = Color.grey;
+            player2.color = Color.white;
+        }
         
+
+        Board.instance.OnTurnChange += ChangeTurn;
+        Board.instance.OnEndGame += Reset;
+    }
+
+    private void Reset()
+    {
         player1.sprite = Board.instance.XSprite;
         player2.sprite = Board.instance.OSprite;
 
@@ -26,7 +46,6 @@ public class TurnIndicator : MonoBehaviour
             player2.color = Color.white;
         }
 
-        Board.instance.OnTurnChange += ChangeTurn;
     }
 
     /// <summary>
